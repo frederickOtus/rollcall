@@ -1,4 +1,3 @@
-from utils import urljson_to_python as dl, get_count, purge_on_attr as purge
 import xml.etree.ElementTree as ET
 from time import time
 
@@ -40,16 +39,9 @@ def bench(func, *args, **kwargs):
     return time()-t1
 
 def get_specific_votes(congress_num, cats):
-    from oldcall import congress_votes
-    votes = congress_votes(congress_num)
-    atr = [{'name':'category', 'type':'in', 'value':cats},]
-    purged = purge(votes, atr)
-    ids = [ str(p['id']) for p in purged ]
-    return ids
-
-def get_specific_votes_v2(congress_num, cats):
     from os import listdir
     from os.path import isfile, join
+    #these are some filepath things we use to find the files we care about
 
     vote_path = 'data/%s/rolls' %(congress_num)
     def is_valid_file(f):
@@ -59,12 +51,22 @@ def get_specific_votes_v2(congress_num, cats):
         category = xml_root.find('category').text
         return category in cats
 
-    files = [ f for f in listdir(vote_path) if is_valid_file(f) ]
+    files = [ "%s/%s" % (vote_path, f) for f in listdir(vote_path) if is_valid_file(f) ]
     return files 
-    
+
+def collate_rollcalls(congress_num, cats):
+    collated_votes = [[],[],[],[],[]]
+    vote_files = get_specific_votes(congress_num, cats)
+    num_votes = len(vote_files)
+    print "Processing %s votes:" % (num_votes)
+    for f in vote_files:
+        vote = format_vote(f)
+        for i in range(len(vote)):
+            collated_votes[i].append(vote[i])
+        num_votes = num_votes - 1
+        print ": %s votes to go" % (num_votes)
+    return collated_votes
+        
 if __name__ == "__main__":
-    cats = ['passage',]
-    print 'benchmarking web call'
-    print bench(get_specific_votes, 112, cats) 
-    print 'benchmarking local call'
-    print bench(get_specific_votes_v2, 112, cats) 
+    print "Bench marking collate_rollcalls()....."
+    print bench(collate_rollcalls, 112, ["passage",])
