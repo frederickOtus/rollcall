@@ -11,7 +11,7 @@ def get_count(base_url):
     else:
         url = base_url + "?limit=0"
     obj = urljson_to_python(url)
-    return obj['meta']['total_count']
+    return int(obj['meta']['total_count'])
 
 def purge_on_attr(lst, attrs):
     '''Takes a list oflist of objs and a list of attrs. 
@@ -33,7 +33,6 @@ def purge_on_attr(lst, attrs):
             f = lambda val: not val[a['name']] in a['value']
         matching_funcs.append(f)
         def matches(elm):
-            print elm['category']
             for f in matching_funcs:
                 if not f(elm):
                     return False
