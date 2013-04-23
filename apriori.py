@@ -133,6 +133,10 @@ class Rules(object):
             return self.clusters[:n]
         return self.clusters
 
+    def print_n_diverse(self, n):
+        for c in self.diverse_clusters(n):
+            print c
+
     def most_influential(self):
         """
         The apriori sort does a lot of implications, that is, if
