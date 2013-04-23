@@ -44,6 +44,13 @@ class VotingCluster(object):
     _diversity = None
     _majority_party = None
 
+
+    def __str__(self):
+        return "Dom. Party: %s, Diversity: %s, size: %s" % (
+                  self.majority_party(),
+                  self.party_diversity(),
+                  len(self.leaders+self.delegates))
+
     def __init__(self, leaders, delegates, confidence, namer):
         leaders = namer(list(leaders))
         delegates = namer(list(delegates))
@@ -112,6 +119,19 @@ class Rules(object):
                                         #a reference to a class function due to
                                         #poor oversight
                                         
+
+    def number_clusters(self):
+        return len(self.clusters)
+
+    def diverse_clusters(self, n=-1):
+        if n  > self.number_clusters():
+            n = -1
+        print self.clusters[0]
+        self.clusters = sorted(self.clusters, key=lambda cluster:
+                0 - cluster.party_diversity())
+        if n > 0:
+            return self.clusters[:n]
+        return self.clusters
 
     def most_influential(self):
         """
