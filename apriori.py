@@ -21,9 +21,9 @@ def load_rules(congress_num, force_new=False, **kwargs):
     f.close()
     return rules
    
-def n_leaders(congress_num):
-    """Grabs the  most important people and their sway in descending order"""
-    rules = grab_rules(congress_num)
+def leaders(congress_num):
+    """Grabs the most important people and their sway in descending order"""
+    rules = load_rules(congress_num)
     leaders_dict = rules.most_influential()
     keys = [ key for key, val in leaders_dict.items() ]
     peoples = rules.resolve_names(keys)
@@ -32,6 +32,48 @@ def n_leaders(congress_num):
         peoples[i]['influence'] = leaders_dict[keys[i]]
         leaders.append(peoples[i])
     return sorted(leaders, key=lambda leader: -leader['influence'])
+
+class VotingCluster(object):
+    """ The apriori develops implication parings, ie: Sen McCain votes for X, so
+    these 5 senators will as well. You can have any number of leaders and
+    delegates. This object represents that grouping."""
+
+    leaders = None
+    delegates = None
+    confidence = None
+    _diversity = None
+    _majority_party = None
+
+    def __init__(self, leaders, delegates, confidence, namer):
+        leaders = namer(list(leaders))
+        delegates = namer(list(delegates))
+        self.leaders = leaders
+        self.delegates = delegates
+        self.confidence = confidence
+        self._diversity = None
+        self._majority_party = None
+
+    def party_diversity(self):
+        """diversity is represented by what percentage of the block is composed
+        of non-majority party members"""
+        if self._diversity is None:
+            block_size = len(self.delegates) + len(self.leaders)
+            party_rep = {}
+            largest = ('', 0)
+            for member in self.leaders + self.delegates:
+                party = member['party']
+                party_rep[party] = party_rep.get(party, 0) + 1
+                if largest[1] < party_rep[party]:
+                    largest = (party, party_rep[party])
+            self._diversity = 1.0 - (largest[1] / block_size)
+            self._majority_party = largest[0]
+        return self._diversity
+
+    def majority_party(self):
+        """Returns the dominant party of this cluster"""
+        if self._majority_party is None:
+            self.party_diversity()
+        return self._majority_party
 
 class Rules(object):
     """
@@ -46,6 +88,7 @@ class Rules(object):
     suppData = None
     congress_num = None
     _leaders = None
+    clusters = None
 
     def __init__(self, congress_num, min_support = .48, min_conf = .95):
         """
@@ -60,6 +103,15 @@ class Rules(object):
         self.L = l
         self.support_data = sd
         self.rules = generateRules(self.L, self.support_data, min_conf)
+        self.clusters = []
+        self.rc = load_rollcall(self.congress_num)
+        for rule in self.rules:
+            self.clusters.append(VotingCluster(rule[0],rule[1],rule[2],
+                self.resolve_names))
+                                        #TODO fix this ugly hack: i have to pass
+                                        #a reference to a class function due to
+                                        #poor oversight
+                                        
 
     def most_influential(self):
         """
@@ -92,11 +144,10 @@ class Rules(object):
     
     def resolve_names(self, val):
         """Takes a list or single id and returns their person dict"""
-        rc = load_rollcall(self.congress_num)
         if type(val) == type("") or type(val) == type(3):
-            return rc.convert_ids_to_people([val,])[0]
+            return self.rc.convert_ids_to_people([val,])[0]
         elif type(val) == type([]):
-            return rc.convert_ids_to_people(val)
+            return self.rc.convert_ids_to_people(val)
         raise Exception('Derp? needs to be int/str/array/dict<key is id>')
 
 def createC1(dataSet):
