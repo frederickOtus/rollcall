@@ -2,7 +2,7 @@ from rollcall import load_rollcall
 import pickle
 import os
 
-def grab_rules(congress_num, force_new=False):
+def load_rules(congress_num, force_new=False, **kwargs):
     """
     Grabbing the data can be super expensive, thus, instead, we write the
     objects to file each time we create a new one and read the frozen one
@@ -10,11 +10,12 @@ def grab_rules(congress_num, force_new=False):
     """
     fname = 'pickle/%s.rules' % (congress_num)
     if os.path.isfile(fname) and not force_new:
+        print fname
         f = open(fname)
         rules = pickle.load(f)
         f.close()
         return rules
-    rules = Rules(congress_num)
+    rules = Rules(congress_num, **kwargs)
     f = open(fname, 'w')
     pickle.dump(rules, f)
     f.close()

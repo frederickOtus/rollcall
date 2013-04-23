@@ -1,6 +1,7 @@
 import simplejson
 from urlgrabber import urlread
 import xml.etree.ElementTree as ET
+from time import time
 
 def urljson_to_python(url):
     json_string = urlread(url)

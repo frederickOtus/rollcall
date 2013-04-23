@@ -77,16 +77,17 @@ class RollCall(object):
         """Returns an array of attribs represnting for each house vote"""
         return self.house_votes[4]
 
-    def __init__(self, congress_num, categories=None, silent=True):
+    def __init__(self, cong_num, categories=None, silent=True):
         """
         roll call objects MUST be initialized with a congress number
         """
-        if congress_num is None:
-            raise Exception("You need to provide a congress number!!!")
         if categories is None:
             categories = ['passage', 'passage_part', 'amendment']
-        self._collate_rollcalls(congress_num, categories, silent)
-        self.voters = get_congress_names(congress_num)
+        vts = self._collate_rollcalls(cong_num, categories, silent)
+        self.house_votes = vts[0]
+        self.senate_votes = vts[1]
+        self.voters = get_congress_names(cong_num)
+        self.congress_num = cong_num
 
     def _format_vote(self, filepath):
         """Takes a filepath to a rollcall vote and returns a 1 dimensional array
@@ -147,6 +148,9 @@ class RollCall(object):
         """
         if not silent:
             print "Gathering valid votes (this is the longest part)"
+        house_votes = [[],[],[],[],[]]
+        senate_votes = [[],[],[],[],[]]
+
         vote_files = self._get_specific_votes(congress_num, cats)
         num_votes = len(vote_files)
         if not silent:
@@ -154,11 +158,12 @@ class RollCall(object):
         for f in vote_files:
             vote = self._format_vote(f)
             if vote[4]['where'] == 'senate':
-                loc = self.senate_votes
+                loc = senate_votes
             else:
-                loc = self.house_votes
+                loc = house_votes
             for i in range(len(vote)):
                 loc[i].append(vote[i])
             num_votes = num_votes - 1
             if not silent:
                 print ": %s votes to go" % (num_votes)
+        return (house_votes, senate_votes)
